@@ -3,7 +3,6 @@ use crate::series::{Series, SeriesData};
 use csv::{Reader, Writer};
 use pyo3::prelude::*;
 use std::error::Error;
-use std::fs::File;
 use std::path::Path;
 
 #[pyfunction]
