@@ -1,9 +1,15 @@
-use crate::series::Series;
+use crate::series::{PySeries, Series};
+use pyo3::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct DataFrame {
     data: HashMap<String, Series>,
+}
+
+#[pyclass]
+pub struct PyDataFrame {
+    pub(crate) inner: DataFrame,
 }
 
 impl DataFrame {
@@ -49,5 +55,52 @@ impl DataFrame {
 
     pub fn series_names(&self) -> impl Iterator<Item = &String> {
         self.data.keys()
+    }
+}
+
+#[pymethods]
+impl PyDataFrame {
+    #[new]
+    pub fn new() -> Self {
+        PyDataFrame {
+            inner: DataFrame::new(),
+        }
+    }
+
+    pub fn add_series(&mut self, series: &PySeries) -> PyResult<()> {
+        self.inner.add_series(series.inner.clone());
+        Ok(())
+    }
+
+    pub fn get_series(&self, name: &str) -> Option<PySeries> {
+        self.inner
+            .get_series(name)
+            .map(|s| PySeries { inner: s.clone() })
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        self.inner.shape()
+    }
+
+    pub fn head(&self, n: usize) -> PyResult<PyDataFrame> {
+        Ok(PyDataFrame {
+            inner: self.inner.head(n),
+        })
+    }
+
+    pub fn tail(&self, n: usize) -> PyResult<PyDataFrame> {
+        Ok(PyDataFrame {
+            inner: self.inner.tail(n),
+        })
+    }
+
+    fn __repr__(&self) -> String {
+        format!("PyDataFrame with shape {:?}", self.shape())
+    }
+
+    fn __getitem__(&self, key: &str) -> PyResult<PySeries> {
+        self.get_series(key).ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyKeyError, _>(format!("No series named '{}'", key))
+        })
     }
 }

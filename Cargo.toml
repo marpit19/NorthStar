@@ -3,9 +3,17 @@ name = "northstar"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "northstar"
+crate-type = ["cdylib"]
+
 [dependencies]
 csv = "1.1"
 tempfile = "3.2"
+pyo3 = { version = "0.18", features = ["extension-module"] }
+
+[build-dependencies]
+pyo3-build-config = "0.18"
 
 [workspace]
 members = ["."]

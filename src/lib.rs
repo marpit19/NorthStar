@@ -1,11 +1,15 @@
-mod series;
-pub use series::Series;
+use pyo3::prelude::*;
+use pyo3::wrap_pyfunction;
 
 mod dataframe;
-pub use dataframe::DataFrame;
-
 mod io;
-pub use io::{read_csv, write_csv};
+mod series;
 
-#[cfg(test)]
-mod test;
+#[pymodule]
+fn northstar(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<series::PySeries>()?;
+    m.add_class::<dataframe::PyDataFrame>()?;
+    m.add_function(wrap_pyfunction!(io::py_read_csv, m)?)?;
+    m.add_function(wrap_pyfunction!(io::py_write_csv, m)?)?;
+    Ok(())
+}

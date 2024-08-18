@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+use pyo3::prelude::*;
+use pyo3::types::PyList;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum SeriesData {
@@ -121,5 +123,70 @@ impl Series {
             }
         };
         Series::new(self.name.clone(), new_data)
+    }
+}
+
+impl fmt::Display for Series {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Series '{}' with {} elements", self.name, self.len())
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PySeries {
+    pub(crate) inner: Series,
+}
+
+#[pymethods]
+impl PySeries {
+    #[new]
+    pub fn new(name: String, data: &PyList) -> PyResult<Self> {
+        let series_data = if let Ok(float_data) = data.extract::<Vec<f64>>() {
+            SeriesData::Float(float_data)
+        } else if let Ok(int_data) = data.extract::<Vec<i64>>() {
+            SeriesData::Integer(int_data)
+        } else if let Ok(str_data) = data.extract::<Vec<String>>() {
+            SeriesData::String(str_data)
+        } else {
+            return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                "Unsupported data type",
+            ));
+        };
+
+        Ok(PySeries {
+            inner: Series::new(name, series_data),
+        })
+    }
+
+    #[getter]
+    pub fn name(&self) -> String {
+        self.inner.name().to_string()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn get(&self, index: usize) -> Option<String> {
+        self.inner.get(index)
+    }
+
+    pub fn set(&mut self, index: usize, value: &str) -> PyResult<()> {
+        self.inner
+            .set(index, value)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))
+    }
+
+    pub fn sum(&self) -> Option<f64> {
+        self.inner.sum()
+    }
+
+    pub fn mean(&self) -> Option<f64> {
+        self.inner.mean()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
     }
 }

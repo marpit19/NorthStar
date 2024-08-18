@@ -1,6 +1,7 @@
-use crate::dataframe::DataFrame;
+use crate::dataframe::{DataFrame, PyDataFrame};
 use crate::series::{Series, SeriesData};
 use csv::{Reader, Writer};
+use pyo3::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
@@ -50,4 +51,17 @@ pub fn write_csv<P: AsRef<Path>>(df: &DataFrame, path: P) -> Result<(), Box<dyn 
 
     wtr.flush()?;
     Ok(())
+}
+
+#[pyfunction]
+pub fn py_read_csv(path: &str) -> PyResult<PyDataFrame> {
+    let df =
+        read_csv(path).map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))?;
+    Ok(PyDataFrame { inner: df })
+}
+
+#[pyfunction]
+pub fn py_write_csv(df: &PyDataFrame, path: &str) -> PyResult<()> {
+    write_csv(&df.inner, path)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))
 }
