@@ -6,6 +6,19 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
+#[pyfunction]
+pub fn py_read_csv(path: &str) -> PyResult<PyDataFrame> {
+    let df =
+        read_csv(path).map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))?;
+    Ok(PyDataFrame { inner: df })
+}
+
+#[pyfunction]
+pub fn py_write_csv(df: &PyDataFrame, path: &str) -> PyResult<()> {
+    write_csv(&df.inner, path)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))
+}
+
 pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<DataFrame, Box<dyn Error>> {
     let mut rdr = Reader::from_path(path)?;
     let headers = rdr.headers()?.clone();
@@ -51,17 +64,4 @@ pub fn write_csv<P: AsRef<Path>>(df: &DataFrame, path: P) -> Result<(), Box<dyn 
 
     wtr.flush()?;
     Ok(())
-}
-
-#[pyfunction]
-pub fn py_read_csv(path: &str) -> PyResult<PyDataFrame> {
-    let df =
-        read_csv(path).map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))?;
-    Ok(PyDataFrame { inner: df })
-}
-
-#[pyfunction]
-pub fn py_write_csv(df: &PyDataFrame, path: &str) -> PyResult<()> {
-    write_csv(&df.inner, path)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(e.to_string()))
 }

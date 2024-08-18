@@ -1,3 +1,4 @@
+use crate::io::{py_read_csv, py_write_csv};
 use crate::series::{PySeries, Series};
 use pyo3::prelude::*;
 use std::collections::HashMap;
@@ -92,6 +93,15 @@ impl PyDataFrame {
         Ok(PyDataFrame {
             inner: self.inner.tail(n),
         })
+    }
+
+    pub fn to_csv(&self, path: &str) -> PyResult<()> {
+        py_write_csv(self, path)
+    }
+
+    #[staticmethod]
+    pub fn read_csv(path: &str) -> PyResult<PyDataFrame> {
+        py_read_csv(path)
     }
 
     fn __repr__(&self) -> String {
